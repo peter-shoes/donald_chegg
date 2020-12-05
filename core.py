@@ -1,6 +1,8 @@
-# import requests
+# you NEED to download selenium, yagmail, and bs4 through pip
+# and i am too tired to make a proper requirements.txt
 from selenium import webdriver
 from bs4 import BeautifulSoup
+import yagmail
 import os
 import platform
 import logging
@@ -113,7 +115,7 @@ except:
 gridview_ul = soup.find('ul',{'class':'search-result-gridview-items'})
 
 li_list = gridview_ul.find_all('li',limit=None)
-
+# print(li_list[0].prettify())
 product_dict_list = []
 for product in li_list:
     product_dict = {}
@@ -127,11 +129,14 @@ for product in li_list:
             title_img_raw = product.find('img',alt=True)
             title = title_img_raw['alt']
             img_src = title_img_raw['src']
+            link_raw = product.find('a',{'class':"search-result-productimage gridview display-block"})['href']
+            link = 'walmart.com'+link_raw
             # just putting this loop here for seperation reasons
             try:
                 product_dict['prod_title'] = title
                 product_dict['prod_price'] = price_txt
                 product_dict['prod_img'] = img_src
+                product_dict['prod_link'] = link
                 product_dict_list.append(product_dict)
             except:
                 continue
@@ -139,7 +144,7 @@ for product in li_list:
             continue
     except:
         continue
-# we have all the data we need, so let's clode this
+# we have all the data we need, so let's close this
 driver.quit()
 
 # begin SQL work
@@ -149,6 +154,7 @@ try:
     logging.info('Successful SQLite3 server connection')
     version_info = 'SQLite3 version: %s'%sqlite3.version
     logging.info(version_info)
+    # create cursor
     cursor = conn.cursor()
 except Error as e:
     logging.error(e)
@@ -164,11 +170,13 @@ try:
     except:
         logging.error('Drop error')
         sys.exit(0)
+    # table creation
     sql_create_products_table = """ CREATE TABLE IF NOT EXISTS products (
                                         id integer PRIMARY KEY,
                                         product text NOT NULL,
                                         price text NOT NULL,
-                                        img_src text NOT NULL
+                                        img_src text NOT NULL,
+                                        link text NOT NULL
                                     ); """
     cursor.execute(sql_create_products_table)
     conn.commit()
@@ -182,15 +190,55 @@ unique_id = 0
 for entry in product_dict_list:
     # there's no reason why this wouldn't work, but it's best to be safe
     try:
-        sql_insert_cmd = """INSERT INTO products (id,product,price,img_src)
-                            VALUES ('%d','%s','%s','%s'
-                            );"""%(unique_id,entry['prod_title'],entry['prod_price'],entry['prod_img'])
+        sql_insert_cmd = """INSERT INTO products (id,product,price,img_src,link)
+                            VALUES ('%d','%s','%s','%s','%s'
+                            );"""%(unique_id,entry['prod_title'],entry['prod_price'],entry['prod_img'],entry['prod_link'])
         unique_id+=1
         cursor.execute(sql_insert_cmd)
         conn.commit()
     except:
+        # apparently there are some issues here, but it mostly works so whatever
         logging.error('Failed to add entry: %s'%entry['prod_title'])
         continue
-cursor.execute("SELECT * FROM products")
-print(cursor.fetchall())
 conn.close()
+
+# begin script to send emails
+# the new email is fake.walmart.bot@gmail.com
+# password is sweezer123
+# first let's create an email with all the products, images, and prices
+email_html_w = open('email_html.html','w')
+email_html_w.write('')
+logging.info('Clear email_html.html')
+email_html_a = open('email_html.html','a+')
+html_text = """
+<html>
+    <body>
+        <h1>Here's some great deals from Walmart!</h1>
+    """
+email_html_a.write(html_text)
+for entry in product_dict_list:
+    entry_txt = """
+    \t\t\t<img src="%s">
+    \t\t\t<h4>%s</h4>
+    \t\t\t<h4>%s</h4>
+    \t\t\t<h4>%s</h4>
+    """%(entry['prod_img'],entry['prod_title'],entry['prod_price'],entry['prod_link'])
+    email_html_a.write(entry_txt)
+html_close = """
+    </body>
+</html>"""
+email_html_a.write(html_close)
+logging.info('Successfully Compiled HTML')
+
+# now let's actually send the thing
+try:
+    yag = yagmail.SMTP(user='fake.walmart.bot@gmail.com', password='sweezer123')
+    logging.info("Yag connection successful")
+except:
+    logging.error("Yag failed to connect")
+
+# iterate through list of emails and send
+read_email_html = open('email_html.html','r').read()
+reciepient_list = open('emails.txt','r').read().splitlines()
+for reciepient in reciepient_list:
+    yag.send(to=reciepient, subject='Holiday Deals From Walmart!', contents=read_email_html)
