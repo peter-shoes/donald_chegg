@@ -4,8 +4,12 @@ from bs4 import BeautifulSoup
 import os
 import platform
 import logging
+# prints info to console, comment out if not needed
 logging.basicConfig(level=logging.INFO)
 import sys
+import sqlite3
+from sqlite3 import Error
+
 
 # this straight up doesn't work
 # headless doesn't exactly matter, but it would be nice
@@ -135,9 +139,58 @@ for product in li_list:
             continue
     except:
         continue
-
-for x in product_dict_list:
-    for y in x:
-        print(x[y])
-    print('')
+# we have all the data we need, so let's clode this
 driver.quit()
+
+# begin SQL work
+# connect to local server (aka the db file)
+try:
+    conn = sqlite3.connect('products.db')
+    logging.info('Successful SQLite3 server connection')
+    version_info = 'SQLite3 version: %s'%sqlite3.version
+    logging.info(version_info)
+    cursor = conn.cursor()
+except Error as e:
+    logging.error(e)
+    sys.exit(0)
+
+# attempt table creation
+try:
+    # drop table on run
+    try:
+        sql_products_drop = """ DROP TABLE IF EXISTS products;"""
+        cursor.execute(sql_products_drop)
+        logging.info('Dropped table products')
+    except:
+        logging.error('Drop error')
+        sys.exit(0)
+    sql_create_products_table = """ CREATE TABLE IF NOT EXISTS products (
+                                        id integer PRIMARY KEY,
+                                        product text NOT NULL,
+                                        price text NOT NULL,
+                                        img_src text NOT NULL
+                                    ); """
+    cursor.execute(sql_create_products_table)
+    conn.commit()
+    logging.info('Table created successfully')
+except Error as e:
+    logging.error(e)
+    sys.exit(0)
+
+# attempt to add all products to table
+unique_id = 0
+for entry in product_dict_list:
+    # there's no reason why this wouldn't work, but it's best to be safe
+    try:
+        sql_insert_cmd = """INSERT INTO products (id,product,price,img_src)
+                            VALUES ('%d','%s','%s','%s'
+                            );"""%(unique_id,entry['prod_title'],entry['prod_price'],entry['prod_img'])
+        unique_id+=1
+        cursor.execute(sql_insert_cmd)
+        conn.commit()
+    except:
+        logging.error('Failed to add entry: %s'%entry['prod_title'])
+        continue
+cursor.execute("SELECT * FROM products")
+print(cursor.fetchall())
+conn.close()
