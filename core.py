@@ -7,6 +7,12 @@ import logging
 logging.basicConfig(level=logging.INFO)
 import sys
 
+# this straight up doesn't work
+# headless doesn't exactly matter, but it would be nice
+# FIXME:
+chrome_options = webdriver.chrome.options.Options()
+chrome_options.headless = True
+
 try:
     # finding the user's OS
     # then finding the correct version of chrome
@@ -74,13 +80,14 @@ except:
     sys.exit(0)
 
 # attempt to get URL
+# this is kinda buggy
+# FIXME:
 try:
     url = 'https://www.walmart.com/m/deals/christmas-gifts'
     driver.get(url)
     logging.into('Successfully got URL')
 except:
     logging.warning('Possible URL error')
-    # sys.exit(0)
 
 # attempt to get page
 try:
@@ -98,11 +105,39 @@ except:
     logging.error('Failed to convert page to BeautifulSoup')
     sys.exit(0)
 
-
-
+# begin actual parsing of html
 gridview_ul = soup.find('ul',{'class':'search-result-gridview-items'})
 
 li_list = gridview_ul.find_all('li',limit=None)
 
-x = li_list[0].prettify()
-print(x)
+product_dict_list = []
+for product in li_list:
+    product_dict = {}
+    try:
+        # get price or continue if no price
+        price_raw = product.find('span',{'class':"price display-inline-block arrange-fit price price-main"})
+        price = price_raw.find('span', {'class':"visuallyhidden"})
+        price_txt = price.get_text()
+        try:
+            # get image and title from alt and src
+            title_img_raw = product.find('img',alt=True)
+            title = title_img_raw['alt']
+            img_src = title_img_raw['src']
+            # just putting this loop here for seperation reasons
+            try:
+                product_dict['prod_title'] = title
+                product_dict['prod_price'] = price_txt
+                product_dict['prod_img'] = img_src
+                product_dict_list.append(product_dict)
+            except:
+                continue
+        except:
+            continue
+    except:
+        continue
+
+for x in product_dict_list:
+    for y in x:
+        print(x[y])
+    print('')
+driver.quit()
