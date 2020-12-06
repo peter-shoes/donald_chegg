@@ -65,17 +65,17 @@ try:
     elif platform.system() == 'Windows':
         logging.info('OS Detcted: Windows')
         try:
-            chromedriver_path = os.path.abspath('chromedriver/chromedriver_win32/chromedriver88.exe')
+            chromedriver_path = os.path.abspath('C:\Users\donal\OneDrive\Desktop\donald_chegg-main\chromedriver\chromedriver_win32\chromedriver88.exe')
             driver = webdriver.Chrome(executable_path=chromedriver_path)
             logging.info('Successfuly launched driver version 88')
         except:
             try:
-                chromedriver_path = os.path.abspath('chromedriver/chromedriver_win32/chromedriver87.exe')
+                chromedriver_path = os.path.abspath('C:\Users\donal\OneDrive\Desktop\donald_chegg-main\chromedriver\chromedriver_win32\chromedriver87.exe')
                 driver = webdriver.Chrome(executable_path=chromedriver_path)
                 logging.info('Successfuly launched driver version 87')
             except:
                 try:
-                    chromedriver_path = os.path.abspath('chromedriver/chromedriver_win32/chromedriver86.exe')
+                    chromedriver_path = os.path.abspath('C:\Users\donal\OneDrive\Desktop\donald_chegg-main\chromedriver\chromedriver_win32\chromedriver86.exe')
                     driver = webdriver.Chrome(executable_path=chromedriver_path)
                     logging.info('Successfuly launched driver version 86')
                 except:
