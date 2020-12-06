@@ -1,5 +1,6 @@
 # you NEED to download selenium, yagmail, and bs4 through pip
 # and i am too tired to make a proper requirements.txt
+# you also need to install html5lib
 from selenium import webdriver
 from bs4 import BeautifulSoup
 import yagmail
@@ -65,17 +66,17 @@ try:
     elif platform.system() == 'Windows':
         logging.info('OS Detcted: Windows')
         try:
-            chromedriver_path = os.path.abspath('C:\Users\donal\OneDrive\Desktop\donald_chegg-main\chromedriver\chromedriver_win32\chromedriver88.exe')
+            chromedriver_path = os.path.abspath('chromedriver\chromedriver_win32\chromedriver88.exe')
             driver = webdriver.Chrome(executable_path=chromedriver_path)
             logging.info('Successfuly launched driver version 88')
         except:
             try:
-                chromedriver_path = os.path.abspath('C:\Users\donal\OneDrive\Desktop\donald_chegg-main\chromedriver\chromedriver_win32\chromedriver87.exe')
+                chromedriver_path = os.path.abspath('chromedriver\chromedriver_win32\chromedriver87.exe')
                 driver = webdriver.Chrome(executable_path=chromedriver_path)
                 logging.info('Successfuly launched driver version 87')
             except:
                 try:
-                    chromedriver_path = os.path.abspath('C:\Users\donal\OneDrive\Desktop\donald_chegg-main\chromedriver\chromedriver_win32\chromedriver86.exe')
+                    chromedriver_path = os.path.abspath('chromedriver\chromedriver_win32\chromedriver86.exe')
                     driver = webdriver.Chrome(executable_path=chromedriver_path)
                     logging.info('Successfuly launched driver version 86')
                 except:
@@ -104,12 +105,11 @@ except:
     sys.exit(0)
 
 # attempt to soupify
-try:
-    soup = BeautifulSoup(''.join(page), 'html5lib')
-    logging.info('Soup Achieved!')
-except:
-    logging.error('Failed to convert page to BeautifulSoup')
-    sys.exit(0)
+# try:
+soup = BeautifulSoup(''.join(page), 'html5lib')
+logging.info('Soup Achieved!')
+# except:
+#     logging.error('Failed to convert page to BeautifulSoup')
 
 # begin actual parsing of html
 gridview_ul = soup.find('ul',{'class':'search-result-gridview-items'})
@@ -242,3 +242,4 @@ read_email_html = open('email_html.html','r').read()
 reciepient_list = open('emails.txt','r').read().splitlines()
 for reciepient in reciepient_list:
     yag.send(to=reciepient, subject='Holiday Deals From Walmart!', contents=read_email_html)
+    logging.info('Sent email to %s'%reciepient)
